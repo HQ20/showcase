@@ -1,0 +1,38 @@
+{
+    "name": "workspace-blockchain",
+    "version": "0.0.1",
+    "license": "Apache-2.0",
+    "engines": {
+        "node": ">= 10.12.0",
+        "npm": ">= 6.4.0",
+        "yarn": ">= 1.10.0"
+    },
+    "scripts": {
+        "pretest": "yarn generate-ts",
+        "test": "scripts/test.sh",
+        "pretest:ci": "yarn generate-ts",
+        "test:ci": "CI=true scripts/test.sh",
+        "generate-ts": "truffle compile && typechain --target truffle --outDir types/truffle-contracts './build/contracts/*.json'"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "2.4.0",
+        "truffle": "5.1.8"
+    },
+    "devDependencies": {
+        "@truffle/hdwallet-provider": "1.0.28",
+        "@types/bignumber.js": "5.0.0",
+        "@types/chai": "4.2.7",
+        "@types/mocha": "5.2.7",
+        "@types/node": "13.1.6",
+        "bignumber.js": "9.0.0",
+        "chai": "4.2.0",
+        "ganache-cli": "6.8.1",
+        "solidity-coverage": "0.7.1",
+        "truffle-typings": "1.0.8",
+        "ts-generator": "0.0.8",
+        "ts-node": "8.6.2",
+        "typescript": "3.7.4",
+        "typechain": "1.0.3",
+        "typechain-target-truffle": "1.0.2"
+    }
+}
