@@ -133,9 +133,6 @@ void setup() {
   // Path where new picture will be saved in SD Card
   String path = "/picture" + String(pictureNumber) + ".jpg";
 
-  String tx = sendTransaction();
-  Serial.println(tx);
-
   String res = sendImage(path, fb->buf, fb->len);
   Serial.println(res);
 
@@ -171,10 +168,14 @@ void loop() {
 
 }
 
-String sendTransaction() {
-  StaticJsonDocument<300> doc;
+String sendTransaction(const char* hash) {
+  StaticJsonDocument<552> doc;
 
-  char json[] = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendTransaction\",\"params\":[{\"from\":\"0xe8a5e64E6EBb88F7DdCE7C91723e4d92b73B8FFc\",\"to\":\"0xB1d9253c58E263242D8B8a790D486D20e64610DC\",\"gas\":\"0x15f90\",\"gasPrice\":\"0x430e23400\",\"value\":\"0x9b6e64a8ec60000\"}],\"id\":\"1\"}";
+  char json[552];
+  strcpy (json, "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendTransaction\",\"params\":[{\"from\":\"0xe8a5e64E6EBb88F7DdCE7C91723e4d92b73B8FFc\",\"to\":\"0xf2Dee5975A808f16f93bf4Fd55aB5481a8B20497\",\"gas\":\"0x25f90\",\"data\":\"0x4abb7c000000000000000000000000000000000000000000000000000000000000016AA20000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002e");
+  strcat (json, hash);
+  strcat (json, "000000000000000000000000000000000000\"}], \"id\":1}");
+
   deserializeJson(doc, json);
 
   WiFiClient client;
@@ -197,14 +198,16 @@ String sendTransaction() {
 
   delay(20);
   long tOut = millis() + TIMEOUT;
+  String serverRes = "";
+
   while (client.connected() && tOut > millis())
   {
     if (client.available())
     {
-      serverRes += client.readStringUntil('\r');
+      String currentResult = client.readStringUntil('\r');
+      serverRes += currentResult;
     }
   }
-  client.stop();
   return (serverRes);
 }
 
@@ -235,20 +238,50 @@ String sendImage(String message, uint8_t *data_pic, size_t size_pic)
     if (client.available())
     {
       String currentResult = client.readStringUntil('\r');
-      if(currentResult.indexOf("\"Hash\":\"Qm") > 0) {
-        DeserializationError error = deserializeJson(doc, json);
+      if (currentResult.indexOf("\"Hash\":\"Qm") > 0) {
+        DeserializationError error = deserializeJson(doc, currentResult);
         // Test if parsing succeeds.
         if (error) {
           Serial.print(F("deserializeJson() failed: "));
           Serial.println(error.c_str());
         } else {
           serializeJson(doc, Serial);
+          const char* ascii_str = doc["Hash"].as<char*>();
+          //declare output string with double size of input string
+          //because each character of input string will be converted
+          //in 2 bytes
+          int len = strlen(ascii_str);
+          char hex_str[(len * 2) + 1];
+
+          //converting ascii string to hex string
+          string2hexString(ascii_str, hex_str);
+          String tx = sendTransaction(hex_str);
+          Serial.println(tx);
+          Serial.println(hex_str);
         }
       }
       serverRes += currentResult;
     }
   }
   return (serverRes);
+}
+//function to convert ascii char[] to hex-string (char[])
+void string2hexString(const char* input, char* output)
+{
+  int loop;
+  int i;
+
+  i = 0;
+  loop = 0;
+
+  while (input[loop] != '\0')
+  {
+    sprintf((char*)(output + i), "%02X", input[loop]);
+    loop += 1;
+    i += 2;
+  }
+  //insert NULL at the end of the output string
+  output[i++] = '\0';
 }
 String header(size_t length)
 {
